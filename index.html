@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- Meta Tags untuk PWA/Mobile App -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Math 1IS">
+    <meta name="theme-color" content="#4f46e5">
+
+    <title>Math 1IS - Aplikasi Semakan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            /* Memastikan kawasan status bar iPhone tidak terlindung */
+            padding-top: env(safe-area-inset-top);
+        }
+        .app-container {
+            max-width: 500px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .bottom-nav-item.active {
+            color: #4f46e5;
+        }
+        .bottom-nav-item.active svg {
+            fill: #4f46e5;
+        }
+        .status-pill {
+            transition: all 0.2s ease;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @keyframes slideIn {
+            from { transform: translateX(20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .page-transition {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        
+        /* Animasi untuk modal */
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+    <div class="app-container bg-white shadow-2xl shadow-slate-200">
+        
+        <!-- Header App Bar -->
+        <div class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4 flex items-center justify-between">
+            <div>
+                <h1 class="text-lg font-bold text-indigo-900 leading-none">Math 1IS</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1" id="current-view-title">Utama</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="bukaModalTambah()" class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center active:scale-90 transition-transform">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 px-4 py-6 mb-24 overflow-y-auto hide-scrollbar">
+            
+            <!-- VIEW: HOME (Stats & Form) -->
+            <div id="view-home" class="page-transition space-y-6">
+                <!-- Stat Cards Row -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-indigo-600 p-4 rounded-3xl text-white shadow-lg shadow-indigo-100">
+                        <p class="text-[10px] font-bold opacity-70 uppercase tracking-widest">Jumlah Murid</p>
+                        <p class="text-2xl font-bold mt-1" id="stat-total">0</p>
+                    </div>
+                    <div class="bg-emerald-500 p-4 rounded-3xl text-white shadow-lg shadow-emerald-100">
+                        <p class="text-[10px] font-bold opacity-70 uppercase tracking-widest">Hantar</p>
+                        <p class="text-2xl font-bold mt-1" id="stat-done">0</p>
+                    </div>
+                </div>
+
+                <!-- Input Info Card -->
+                <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 space-y-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Tajuk Tugasan</label>
+                        <input type="text" id="app-tajuk" placeholder="Cth: Latihan Masa" 
+                            class="w-full bg-white border border-slate-200 rounded-2xl p-4 focus:ring-2 focus:ring-indigo-400 outline-none font-semibold shadow-sm">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Tarikh</label>
+                        <input type="date" id="app-tarikh" 
+                            class="w-full bg-white border border-slate-200 rounded-2xl p-4 focus:ring-2 focus:ring-indigo-400 outline-none font-semibold shadow-sm">
+                    </div>
+                </div>
+
+                <!-- Search & List Section -->
+                <div class="space-y-4">
+                    <div class="relative">
+                        <input type="text" id="app-search" oninput="filterMurid()" placeholder="Cari nama murid..." 
+                            class="w-full bg-slate-100 rounded-2xl py-3 pl-12 pr-4 text-sm font-medium outline-none focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all border border-transparent focus:border-indigo-100">
+                        <svg class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+
+                    <div id="app-student-list" class="space-y-3">
+                        <!-- Murid rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: SETTINGS -->
+            <div id="view-settings" class="hidden page-transition space-y-6">
+                <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
+                    <h3 class="font-bold text-slate-800 mb-4">Pengurusan Data</h3>
+                    <div class="space-y-3">
+                        <button onclick="resetSenarai()" class="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-200 active:scale-95 transition-all">
+                            <span class="text-sm font-bold text-slate-600">Set Semula Senarai Asal</span>
+                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357-2H15"/></svg>
+                        </button>
+                        <div class="p-4 bg-indigo-50 rounded-2xl">
+                            <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Status Pangkalan Data</p>
+                            <p class="text-xs font-bold text-indigo-700">Google Sheets Connected</p>
+                        </div>
+                        <div class="p-4 bg-slate-100 rounded-2xl text-[10px] text-slate-500 font-medium">
+                            Tip: Untuk berkongsi aplikasi ini sebagai pautan (link), muat naik fail index.html ini ke Tiiny.host atau GitHub Pages.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Action Bar (Fixed) -->
+        <div class="fixed bottom-20 left-1/2 -translate-x-1/2 w-full max-w-[500px] px-6 z-30">
+            <button onclick="simpanRekod()" id="app-btn-submit" class="w-full bg-indigo-600 text-white font-bold py-5 rounded-3xl shadow-2xl shadow-indigo-200 flex items-center justify-center gap-3 active:scale-95 transition-all">
+                <span id="btn-text">Simpan Rekod</span>
+                <svg id="btn-spinner" class="hidden animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            </button>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[500px] bg-white border-t border-slate-100 px-10 py-4 flex justify-between items-center z-40">
+            <button onclick="switchView('home')" class="bottom-nav-item active flex flex-col items-center gap-1">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                <span class="text-[10px] font-bold uppercase tracking-tighter">Utama</span>
+            </button>
+            <button onclick="switchView('settings')" class="bottom-nav-item flex flex-col items-center gap-1 text-slate-400">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+                <span class="text-[10px] font-bold uppercase tracking-tighter">Tetapan</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Modal: Tambah Murid -->
+    <div id="app-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-6">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="tutupModalTambah()"></div>
+        <div class="bg-white rounded-[2.5rem] w-full max-w-sm p-8 relative animate-slide-up shadow-2xl">
+            <h2 class="text-xl font-bold text-slate-800">Murid Baru</h2>
+            <p class="text-slate-400 text-xs mt-1">Tambah nama murid ke senarai hari ini.</p>
+            <input type="text" id="input-nama-baru" placeholder="NAMA PENUH..." 
+                class="w-full mt-6 bg-slate-50 border border-slate-200 rounded-2xl p-4 font-bold uppercase outline-none focus:ring-2 focus:ring-indigo-400">
+            <div class="flex gap-3 mt-6">
+                <button onclick="tutupModalTambah()" class="flex-1 py-4 font-bold text-slate-400 bg-slate-50 rounded-2xl">Batal</button>
+                <button onclick="tambahMuridKeSenarai()" class="flex-1 py-4 font-bold text-white bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-100">Tambah</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-10 left-1/2 -translate-x-1/2 opacity-0 pointer-events-none z-[100] transition-all duration-300">
+        <div class="bg-slate-900 text-white px-6 py-4 rounded-full shadow-2xl flex items-center gap-3">
+            <span id="toast-msg" class="font-bold text-xs uppercase tracking-widest"></span>
+        </div>
+    </div>
+
+    <script>
+        // PASTIKAN URL INI ADALAH URL WEB APP DARIPADA GOOGLE APPS SCRIPT CIKGU
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0IZFymyu0xzALlbz0-UhtBbPWj-cZmMEEDvzBvBvyrOaPmOtkEnQ-1nfX1dXRS2Pkuw/exec";
+
+        const senaraiAsal = [
+            "ADAM MIKHAIL BIN NAZLI", "ADAM WAFRI BIN MOHD ALIF CHAN", "AFIF BIN JOHARI",
+            "AFIQ ASYRAF BIN ZAIRUL ANUAR", "AHMAD IRFAN BIN ISMAIL", "AIRA DAMIA BINTI MOHD MUJAHIDULLAH",
+            "ANNISA FAIHA LIYANA BINTI ZUHAR AZAMAN", "HARISSA HUSSNA LIM BINTI HUSSAINIZZARA",
+            "NUR QALEESHA BINTI MOHD HAFIZ", "MOHAMAD HABIB HANAFI BIN ABDUL RAOF",
+            "MOHAMAD NOOR IRSYAD MIFZAL BIN MOHAMAD RIZAL", "MOHAMAD QABIL ADAM BIN MOHD FIRDAUS",
+            "MUHAMMAD ADAM BIN MUHAMAD AZIM", "MUHAMMAD AIMAN WAFIY BIN MOHD HAZWAN",
+            "MUHAMMAD AKASHA SYAHIRAN BIN MOHD RIDUWAN", "MUHAMMAD AKIF AIMAN BIN ASRUL",
+            "MUHAMMAD AQIB QUSYAI BIN ZAIDI", "MUHAMMAD HADIF ADLI BIN ASMAWI",
+            "MUHAMMAD SHAFIZAL IMAN BIN MOHD SUKRI", "MUHAMMAD ZAYYAN RIZQI BIN MOHD NIZAM",
+            "NISA NURULJANNAH BINTI AZAZUDIN", "NUR AISYAH UMAIRA BINTI MOHD HERIERIDDWAN",
+            "NUR DAMIA QAISARA BINTI MUHAMMAD FIRDAUS", "NUR FARISHA ALIYA BINTI MD.ZIN",
+            "NUR IRDINA AFIQAH BINTI MOHD RUSDAN", "NUR MUNA NAJAA BINTI MOHD FAIRUZ",
+            "NUR QASEH ALYA BINTI MOHD ZOLKAFLI", "NUR ZAFIRAH BINTI IZWAD IZARUDDIN",
+            "NURAINA HAZIRAH BINTI MOHD SHAKIN", "NURHAZZIQAH DAYANA BINTI HENDRA",
+            "NURUL HANA ATHIRAH BINTI MOHD HAZRI", "PUTRI AWLIYA DARWISHA BINTI AZIZI",
+            "SITI HAZIRAH BINTI KHAIRIL ANUAR", "SITI NUR SUFFIYA BINTI SAHARAZAT",
+            "SITI NURDIYANNAH BINTI MOHD HAIRULFAIZUL", "WAN MUHAMAD ADAM DANISH BIN WAN MUHAMAD HASYIMI",
+            "ZARA ARISSA BINTI ZAMRI"
+        ];
+
+        let senaraiAktif = [...senaraiAsal].map(nama => ({ nama, status: "Belum Hantar" }));
+        
+        // Set tarikh hari ini secara automatik
+        window.onload = () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('app-tarikh').value = today;
+            renderList();
+        };
+
+        function switchView(view) {
+            document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('view-settings').classList.add('hidden');
+            document.querySelectorAll('.bottom-nav-item').forEach(i => i.classList.remove('active', 'text-indigo-600', 'text-slate-400'));
+            
+            if(view === 'home') {
+                document.getElementById('view-home').classList.remove('hidden');
+                document.querySelectorAll('.bottom-nav-item')[0].classList.add('active', 'text-indigo-600');
+                document.getElementById('current-view-title').innerText = "Utama";
+            } else {
+                document.getElementById('view-settings').classList.remove('hidden');
+                document.querySelectorAll('.bottom-nav-item')[1].classList.add('active', 'text-indigo-600');
+                document.getElementById('current-view-title').innerText = "Tetapan";
+            }
+        }
+
+        function renderList(filter = "") {
+            const container = document.getElementById('app-student-list');
+            const searchVal = filter.toUpperCase();
+            
+            const filteredItems = senaraiAktif
+                .map((m, idx) => ({...m, originalIdx: idx}))
+                .filter(m => m.nama.includes(searchVal));
+
+            if (filteredItems.length === 0) {
+                container.innerHTML = `<div class="py-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">Tiada murid dijumpai</div>`;
+            } else {
+                container.innerHTML = filteredItems.map(m => `
+                    <div class="bg-white p-4 rounded-3xl border border-slate-100 flex items-center justify-between gap-3 shadow-sm">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[10px] font-bold text-slate-300 uppercase leading-none mb-1">#${m.originalIdx + 1}</p>
+                            <h4 class="text-sm font-bold text-slate-700 truncate uppercase tracking-tight">${m.nama}</h4>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <select onchange="updateStatus(${m.originalIdx}, this.value)" class="bg-slate-50 border-none text-[10px] font-bold px-3 py-2 rounded-xl outline-none ${getStatusColor(m.status)}">
+                                <option value="Sudah Hantar" ${m.status === 'Sudah Hantar' ? 'selected' : ''}>HANTAR</option>
+                                <option value="Belum Hantar" ${m.status === 'Belum Hantar' ? 'selected' : ''}>BELUM</option>
+                                <option value="Lewat" ${m.status === 'Lewat' ? 'selected' : ''}>LEWAT</option>
+                            </select>
+                            <button onclick="padamMurid(${m.originalIdx})" class="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            updateStats();
+        }
+
+        function getStatusColor(s) {
+            if(s === 'Sudah Hantar') return 'text-emerald-600 bg-emerald-50';
+            if(s === 'Lewat') return 'text-amber-600 bg-amber-50';
+            return 'text-red-500 bg-red-50';
+        }
+
+        function updateStatus(idx, val) {
+            senaraiAktif[idx].status = val;
+            updateStats();
+        }
+
+        function filterMurid() {
+            renderList(document.getElementById('app-search').value);
+        }
+
+        function updateStats() {
+            const done = senaraiAktif.filter(m => m.status === 'Sudah Hantar').length;
+            document.getElementById('stat-total').innerText = senaraiAktif.length;
+            document.getElementById('stat-done').innerText = done;
+        }
+
+        function bukaModalTambah() {
+            document.getElementById('app-modal').classList.remove('hidden');
+            document.getElementById('input-nama-baru').focus();
+        }
+
+        function tutupModalTambah() {
+            document.getElementById('app-modal').classList.add('hidden');
+            document.getElementById('input-nama-baru').value = "";
+        }
+
+        function tambahMuridKeSenarai() {
+            const nama = document.getElementById('input-nama-baru').value.trim().toUpperCase();
+            if(!nama) return;
+            senaraiAktif.push({ nama, status: "Belum Hantar" });
+            tutupModalTambah();
+            renderList(document.getElementById('app-search').value);
+            showToast("Murid ditambah!");
+        }
+
+        function padamMurid(idx) {
+            const nama = senaraiAktif[idx].nama;
+            if(confirm(`Padam nama ${nama} daripada senarai?`)) {
+                senaraiAktif.splice(idx, 1);
+                renderList(document.getElementById('app-search').value);
+                showToast("Murid dipadam");
+            }
+        }
+
+        function resetSenarai() {
+            if(confirm("Padam data semasa dan kembali ke senarai 37 murid asal?")) {
+                senaraiAktif = [...senaraiAsal].map(nama => ({ nama, status: "Belum Hantar" }));
+                renderList();
+                showToast("Data set semula");
+            }
+        }
+
+        async function simpanRekod() {
+            const tajuk = document.getElementById('app-tajuk').value.trim();
+            const btn = document.getElementById('app-btn-submit');
+            const spinner = document.getElementById('btn-spinner');
+            const text = document.getElementById('btn-text');
+
+            if(!tajuk) {
+                showToast("Sila isi tajuk!");
+                document.getElementById('app-tajuk').focus();
+                return;
+            }
+
+            btn.disabled = true;
+            spinner.classList.remove('hidden');
+            text.innerText = "Menghantar...";
+
+            const dateVal = new Date(document.getElementById('app-tarikh').value);
+            const dateStr = `${dateVal.getDate()}/${dateVal.getMonth()+1}/${dateVal.getFullYear()}`;
+
+            const payload = senaraiAktif.map((m, i) => ({
+                bil: i + 1,
+                nama: m.nama,
+                tarikh: dateStr,
+                tajuk: tajuk,
+                status: m.status
+            }));
+
+            try {
+                // Menghantar data ke Google Script
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    cache: 'no-cache',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                showToast("Berjaya disimpan!");
+                // Opsional: Kosongkan tajuk selepas hantar
+                // document.getElementById('app-tajuk').value = "";
+            } catch (e) {
+                console.error(e);
+                showToast("Ralat penghantaran!");
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('hidden');
+                text.innerText = "Simpan Rekod";
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.innerText = msg;
+            toast.style.opacity = '1';
+            toast.style.pointerEvents = 'auto';
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.pointerEvents = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
