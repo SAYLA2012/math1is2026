@@ -47,6 +47,15 @@
         .page-transition {
             animation: slideIn 0.3s ease-out forwards;
         }
+        
+        /* Animasi untuk modal */
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
@@ -124,6 +133,9 @@
                             <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Status Pangkalan Data</p>
                             <p class="text-xs font-bold text-indigo-700">Google Sheets Connected</p>
                         </div>
+                        <div class="p-4 bg-slate-100 rounded-2xl text-[10px] text-slate-500 font-medium">
+                            Tip: Untuk berkongsi aplikasi ini sebagai pautan (link), muat naik fail index.html ini ke Tiiny.host atau GitHub Pages.
+                        </div>
                     </div>
                 </div>
             </div>
@@ -173,6 +185,7 @@
     </div>
 
     <script>
+        // PASTIKAN URL INI ADALAH URL WEB APP DARIPADA GOOGLE APPS SCRIPT CIKGU
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0IZFymyu0xzALlbz0-UhtBbPWj-cZmMEEDvzBvBvyrOaPmOtkEnQ-1nfX1dXRS2Pkuw/exec";
 
         const senaraiAsal = [
@@ -197,7 +210,13 @@
         ];
 
         let senaraiAktif = [...senaraiAsal].map(nama => ({ nama, status: "Belum Hantar" }));
-        document.getElementById('app-tarikh').valueAsDate = new Date();
+        
+        // Set tarikh hari ini secara automatik
+        window.onload = () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('app-tarikh').value = today;
+            renderList();
+        };
 
         function switchView(view) {
             document.getElementById('view-home').classList.add('hidden');
@@ -220,7 +239,7 @@
             const searchVal = filter.toUpperCase();
             
             const filteredItems = senaraiAktif
-                .map((m, idx) => ({...m, idx}))
+                .map((m, idx) => ({...m, originalIdx: idx}))
                 .filter(m => m.nama.includes(searchVal));
 
             if (filteredItems.length === 0) {
@@ -229,16 +248,16 @@
                 container.innerHTML = filteredItems.map(m => `
                     <div class="bg-white p-4 rounded-3xl border border-slate-100 flex items-center justify-between gap-3 shadow-sm">
                         <div class="flex-1 min-w-0">
-                            <p class="text-[10px] font-bold text-slate-300 uppercase leading-none mb-1">#${m.idx + 1}</p>
+                            <p class="text-[10px] font-bold text-slate-300 uppercase leading-none mb-1">#${m.originalIdx + 1}</p>
                             <h4 class="text-sm font-bold text-slate-700 truncate uppercase tracking-tight">${m.nama}</h4>
                         </div>
                         <div class="flex items-center gap-2">
-                            <select onchange="updateStatus(${m.idx}, this.value)" class="bg-slate-50 border-none text-[10px] font-bold px-3 py-2 rounded-xl outline-none ${getStatusColor(m.status)}">
+                            <select onchange="updateStatus(${m.originalIdx}, this.value)" class="bg-slate-50 border-none text-[10px] font-bold px-3 py-2 rounded-xl outline-none ${getStatusColor(m.status)}">
                                 <option value="Sudah Hantar" ${m.status === 'Sudah Hantar' ? 'selected' : ''}>HANTAR</option>
                                 <option value="Belum Hantar" ${m.status === 'Belum Hantar' ? 'selected' : ''}>BELUM</option>
                                 <option value="Lewat" ${m.status === 'Lewat' ? 'selected' : ''}>LEWAT</option>
                             </select>
-                            <button onclick="padamMurid(${m.idx})" class="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                            <button onclick="padamMurid(${m.originalIdx})" class="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                             </button>
                         </div>
@@ -319,7 +338,7 @@
 
             btn.disabled = true;
             spinner.classList.remove('hidden');
-            text.innerText = "Hantar...";
+            text.innerText = "Menghantar...";
 
             const dateVal = new Date(document.getElementById('app-tarikh').value);
             const dateStr = `${dateVal.getDate()}/${dateVal.getMonth()+1}/${dateVal.getFullYear()}`;
@@ -333,14 +352,20 @@
             }));
 
             try {
+                // Menghantar data ke Google Script
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
+                    cache: 'no-cache',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+                
                 showToast("Berjaya disimpan!");
-                document.getElementById('app-tajuk').value = "";
+                // Opsional: Kosongkan tajuk selepas hantar
+                // document.getElementById('app-tajuk').value = "";
             } catch (e) {
+                console.error(e);
                 showToast("Ralat penghantaran!");
             } finally {
                 btn.disabled = false;
@@ -351,17 +376,16 @@
 
         function showToast(msg) {
             const toast = document.getElementById('toast');
-            document.getElementById('toast-msg').innerText = msg;
-            toast.classList.replace('opacity-0', 'opacity-100');
-            toast.classList.add('translate-y-2');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.innerText = msg;
+            toast.style.opacity = '1';
+            toast.style.pointerEvents = 'auto';
+            
             setTimeout(() => {
-                toast.classList.replace('opacity-100', 'opacity-0');
-                toast.classList.remove('translate-y-2');
+                toast.style.opacity = '0';
+                toast.style.pointerEvents = 'none';
             }, 3000);
         }
-
-        // Init
-        renderList();
     </script>
 </body>
 </html>
